@@ -1,5 +1,5 @@
 import express from "express";
-import { solveSudoku, generateSudoku, analyzeSudoku, getHint } from "../src/lib/sudoku.js";
+import { solveSudoku, generateSudoku, analyzeSudoku, getHint } from "../src/lib/sudoku.ts";
 import Groq from "groq-sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
