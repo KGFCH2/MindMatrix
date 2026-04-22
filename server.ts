@@ -121,13 +121,6 @@ Remember: This is a ${gridSize}x${gridSize} puzzle, so only use digits 1-${maxDi
           });
         }
       }
-          console.error("Groq API also failed:", groqErr.message);
-          return res.status(503).json({ 
-            error: "Both Gemini and Groq APIs failed. Please try again later.",
-            details: groqErr.message
-          });
-        }
-      }
 
       // If we reach here, no providers worked
       return res.status(503).json({ 
