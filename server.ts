@@ -1,5 +1,4 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -162,9 +161,8 @@ Remember: This is a ${gridSize}x${gridSize} puzzle, so only use digits 1-${maxDi
   });
 
   // Static file serving and Vite setup
-  const isVercel = process.env.VERCEL === '1';
-  
-  if (process.env.NODE_ENV !== "production" && !isVercel) {
+  if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -175,7 +173,7 @@ Remember: This is a ${gridSize}x${gridSize} puzzle, so only use digits 1-${maxDi
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
-  } else if (!isVercel) {
+  } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
