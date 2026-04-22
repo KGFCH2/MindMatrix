@@ -3,7 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { solveSudoku, generateSudoku, analyzeSudoku, getHint } from "./src/lib/sudoku.ts";
+import { solveSudoku, generateSudoku, analyzeSudoku, getHint } from "./src/lib/sudoku.js";
 import Groq from "groq-sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
