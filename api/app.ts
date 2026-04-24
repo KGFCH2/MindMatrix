@@ -66,7 +66,7 @@ Remember: This is a ${gridSize}x${gridSize} puzzle, so only use digits 1-${maxDi
     let lastGeminiError = null;
     let lastGroqError = null;
 
-    try {
+
         if (gemini) {
             try {
                 // Using gemini-2.0-flash which is the current stable flash model
