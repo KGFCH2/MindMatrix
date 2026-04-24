@@ -229,7 +229,7 @@ export default function Home() {
     {
       year: "Today",
       title: "The AI Era",
-      desc: "Sudoku is now a global staple for brain health. GridMind takes it further, using advanced algorithms to help you solve, learn, and master the grid.",
+      desc: "Sudoku is now a global staple for brain health. MindMatrix takes it further, using advanced algorithms to help you solve, learn, and master the grid.",
       icon: <Sparkles className="w-6 h-6" />,
       align: "right"
     }
@@ -265,7 +265,7 @@ export default function Home() {
             </motion.div>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-stone-900 dark:text-stone-100 leading-[0.85] drop-shadow-sm">
               <span className="text-stone-900 dark:text-stone-100">SOLVE</span> SUDOKU <br />
-              WITH <span className="text-primary drop-shadow-[0_0_20px_rgba(var(--theme-primary-rgb),0.3)]">GRIDMIND</span>
+              WITH <span className="text-primary drop-shadow-[0_0_20px_rgba(var(--theme-primary-rgb),0.3)]">MINDMATRIX</span>
             </h1>
             <p className="text-lg text-stone-600 dark:text-stone-300 max-w-xl lg:mx-0 mx-auto font-medium leading-relaxed">
               The ultimate Sudoku companion. Solve puzzles instantly, learn advanced strategies, and visualize the path to victory with our state-of-the-art backtracking engine.
@@ -434,7 +434,7 @@ export default function Home() {
               READY TO <span className="text-stone-900">MASTER</span> <br /> THE <span className="text-stone-900">GRID</span>?
             </h2>
             <p className="text-white/90 text-xl font-medium mb-8">
-              Whether you're a beginner or a grandmaster, <span className="font-black">GridMind</span> is your perfect training partner.
+              Whether you're a beginner or a grandmaster, <span className="font-black">MindMatrix</span> is your perfect training partner.
             </p>
             <Link
               to="/solver"

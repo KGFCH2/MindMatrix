@@ -11,7 +11,7 @@ export default function Privacy() {
     {
       icon: <ShieldCheck className="w-6 h-6" />,
       title: "2. How We Use Your Information",
-      content: "We use the information we collect to provide, maintain, and improve our services, to develop new features, and to protect <span className='text-brand font-bold'>GridMind</span> and our users."
+      content: "We use the information we collect to provide, maintain, and improve our services, to develop new features, and to protect <span className='text-brand font-bold'>MindMatrix</span> and our users."
     },
     {
       icon: <Database className="w-6 h-6" />,

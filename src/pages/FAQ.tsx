@@ -34,7 +34,7 @@ export default function FAQ() {
     {
       icon: <Smartphone className="w-5 h-5" />,
       question: "Does it work on mobile devices?",
-      answer: "Yes, GridMind is fully responsive and works perfectly on smartphones, tablets, and desktops."
+      answer: "Yes, MindMatrix is fully responsive and works perfectly on smartphones, tablets, and desktops."
     },
     {
       icon: <Globe className="w-5 h-5" />,
@@ -95,7 +95,7 @@ export default function FAQ() {
         <h1 className="text-5xl font-black tracking-tighter text-stone-900 dark:text-stone-100 uppercase transition-colors duration-500">
           Frequently <span className="text-primary">Asked</span> Questions
         </h1>
-        <p className="text-stone-500 dark:text-stone-400 font-medium transition-colors duration-500">Everything you need to know about <span className="text-brand">GridMind</span>.</p>
+        <p className="text-stone-500 dark:text-stone-400 font-medium transition-colors duration-500">Everything you need to know about <span className="text-brand">MindMatrix</span>.</p>
       </motion.div>
 
       <div className="space-y-4">

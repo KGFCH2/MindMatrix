@@ -6,22 +6,22 @@ export default function Terms() {
     {
       icon: <Shield className="w-6 h-6" />,
       title: "1. Acceptance of Terms",
-      content: "By accessing and using <span className='text-brand font-bold'>GridMind</span>, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this site."
+      content: "By accessing and using <span className='text-brand font-bold'>MindMatrix</span>, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this site."
     },
     {
       icon: <Scale className="w-6 h-6" />,
       title: "2. Use License",
-      content: "Permission is granted to temporarily download one copy of the materials (information or software) on GridMind's website for personal, non-commercial transitory viewing only."
+      content: "Permission is granted to temporarily download one copy of the materials (information or software) on MindMatrix's website for personal, non-commercial transitory viewing only."
     },
     {
       icon: <FileText className="w-6 h-6" />,
       title: "3. Disclaimer",
-      content: "The materials on GridMind's website are provided on an 'as is' basis. GridMind makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability."
+      content: "The materials on MindMatrix's website are provided on an 'as is' basis. MindMatrix makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability."
     },
     {
       icon: <Clock className="w-6 h-6" />,
       title: "4. Limitations",
-      content: "In no event shall GridMind or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials."
+      content: "In no event shall MindMatrix or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials."
     },
     {
       icon: <Globe className="w-6 h-6" />,

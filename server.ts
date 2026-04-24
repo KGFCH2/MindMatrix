@@ -60,7 +60,7 @@ app.post("/api/ai/chat", async (req, res) => {
     const maxDigit = gridSize;
     const validDigits = Array.from({length: maxDigit}, (_, i) => i + 1).join(', ');
     
-    const systemPrompt = `You are GridMind, an expert Sudoku AI assistant. You are helping with a ${gridSize}x${gridSize} Sudoku puzzle.
+    const systemPrompt = `You are MindMatrix, an expert Sudoku AI assistant. You are helping with a ${gridSize}x${gridSize} Sudoku puzzle.
 
 CRITICAL RULES:
 - Only suggest digits from 1 to ${maxDigit} (${validDigits})

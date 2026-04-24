@@ -1,6 +1,6 @@
-# 🧩 GridMind | Master the Sudoku Grid
+# 🧩 MindMatrix | Master the Sudoku Grid
 
-GridMind is a modern, high-performance Sudoku application powered by advanced backtracking algorithms and an eccentric, playful design. It offers a seamless experience for solving, learning, and generating Sudoku puzzles with a focus on visual feedback and "mind-blowing" interactive elements. 🚀
+MindMatrix is a modern, high-performance Sudoku application powered by advanced backtracking algorithms and an eccentric, playful design. It offers a seamless experience for solving, learning, and generating Sudoku puzzles with a focus on visual feedback and "mind-blowing" interactive elements. 🚀
 
 ## ✨ Key Features
 
@@ -15,7 +15,7 @@ GridMind is a modern, high-performance Sudoku application powered by advanced ba
 
 ## 🎨 Design Philosophy
 
-GridMind breaks the mold of generic Sudoku apps with a **"Playful & Technical"** aesthetic:
+MindMatrix breaks the mold of generic Sudoku apps with a **"Playful & Technical"** aesthetic:
 
 - **Typography**: A striking mix of **Cambria Math** for authoritative headings and **Comic Sans MS** for an approachable, playful UI.
 - **Interactivity**: Every button and toggle is engineered for maximum kinetic feedback, utilizing `motion` for physics-based animations.
@@ -58,7 +58,7 @@ GridMind breaks the mold of generic Sudoku apps with a **"Playful & Technical"**
 1. **Navigate to the project directory**:
 
    ```bash
-   cd GridMind
+   cd MindMatrix
    ```
 
 2. **Install all dependencies**:
@@ -176,11 +176,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🛡️ Privacy & Terms
 
-We value your privacy. GridMind is built with transparency. Check out our internal Privacy Policy and Terms of Service pages for more info. 🔒
+We value your privacy. MindMatrix is built with transparency. Check out our internal Privacy Policy and Terms of Service pages for more info. 🔒
 
 ## ✉️ Contact & Credits
 
-**GridMind** is created with ❤️ by **Babin Bid**. Feel free to reach out for collaborations or feedback!
+**MindMatrix** is created with ❤️ by **Babin Bid**. Feel free to reach out for collaborations or feedback!
 
 - **📧 Mail**: [babinbid05@gmail.com](mailto:babinbid05@gmail.com)
 - **🔗 LinkedIn**: [babinbid123](https://www.linkedin.com/in/babinbid123/)

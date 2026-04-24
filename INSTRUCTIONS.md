@@ -1,6 +1,6 @@
-# 📖 GridMind - Working Principles and User Guidance
+# 📖 MindMatrix - Working Principles and User Guidance
 
-This document provides a comprehensive overview of the technical architecture and user-facing workflows of the GridMind application. 🧩
+This document provides a comprehensive overview of the technical architecture and user-facing workflows of the MindMatrix application. 🧩
 
 ## 🏗️ Application Architecture
 
@@ -27,7 +27,7 @@ The application follows a modern **Full-Stack SPA** architecture:
 
 #### 📄 Pages (`/src/pages`)
 
-- **`Home.tsx`** 🏠: The feature showcase. High-energy entrance into the GridMind universe.
+- **`Home.tsx`** 🏠: The feature showcase. High-energy entrance into the MindMatrix universe.
 - **`Solver.tsx`** 🧩: The "Command Center".
   - **Logic**: Integrates the backtracking solver with the React state.
   - **Victory**: Triggers the **extreme 200px blur** and trophy modal when `isGridCompleteAndValid` returns true.
@@ -69,7 +69,7 @@ Start with **Easy 6x6** boards to learn the interface, then jump into the **Lear
 
 ### 👨‍💻 Created by
 
-**GridMind** is created by **Babin Bid**. Licensed under the [MIT License](LICENSE).
+**MindMatrix** is created by **Babin Bid**. Licensed under the [MIT License](LICENSE).
 
 - **📧 Mail**: [babinbid05@gmail.com](mailto:babinbid05@gmail.com)
 - **🔗 LinkedIn**: [babinbid123](https://www.linkedin.com/in/babinbid123/)

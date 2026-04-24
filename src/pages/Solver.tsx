@@ -251,7 +251,7 @@ export default function Solver() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'GridMind',
+          title: 'MindMatrix',
           text: text,
           url: window.location.href,
         });
@@ -753,7 +753,7 @@ export default function Solver() {
                 className="w-full flex items-center justify-center gap-2 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl font-bold text-xs hover:bg-primary dark:hover:bg-primary dark:hover:text-white hover:scale-[1.02] hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {isAiThinking ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
-                Ask GridMind
+                Ask MindMatrix
               </button>
             </div>
 
@@ -793,7 +793,7 @@ export default function Solver() {
               >
                 <div className="flex items-center gap-1.5 font-bold text-xs">
                   <Brain className="w-4 h-4 text-primary" />
-                  GridMind Insight
+                  MindMatrix Insight
                 </div>
                 <p className="text-[10px] font-medium leading-relaxed">
                   {aiResponse}

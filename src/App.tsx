@@ -176,7 +176,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                   className="space-y-1"
                 >
                   <h1 className="text-3xl font-serif font-black tracking-tighter uppercase text-brand">
-                    GridMind
+                    MindMatrix
                   </h1>
                   <div className="h-0.5 w-12 bg-linear-to-r from-primary to-secondary mx-auto rounded-full" />
                 </motion.div>
@@ -225,7 +225,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-1.5 group"
             >
               <img src="/Favicon.png" alt="Logo" className="w-6 h-6 object-contain group-hover:rotate-12 transition-transform duration-500" />
-              <span className="text-base font-serif font-bold tracking-tight uppercase text-brand">GridMind</span>
+              <span className="text-base font-serif font-bold tracking-tight uppercase text-brand">MindMatrix</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -296,7 +296,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             <div className="col-span-2 space-y-2">
               <div className="flex items-center gap-1.5">
                 <img src="/Favicon.png" alt="Logo" className="w-5 h-5 object-contain" />
-                <span className="text-base font-serif font-bold tracking-tight uppercase text-brand">GridMind</span>
+                <span className="text-base font-serif font-bold tracking-tight uppercase text-brand">MindMatrix</span>
               </div>
               <p className="text-stone-500 dark:text-stone-400 text-xs font-medium leading-relaxed max-w-xs">
                 Advanced AI-powered Sudoku solver. Playful, compact, and powerful.
@@ -320,7 +320,7 @@ function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="pt-4 border-t border-stone-100 dark:border-stone-800 text-center space-y-2">
             <div className="text-stone-400 dark:text-stone-500 text-[9px] font-bold uppercase tracking-[0.2em]">
-              Created by <span className="text-primary font-black">Babin Bid</span> &copy; 2026 GridMind.
+              Created by <span className="text-primary font-black">Babin Bid</span> &copy; 2026 MindMatrix.
             </div>
             <div className="flex justify-center gap-4 text-[9px] font-bold uppercase tracking-widest transition-all">
               <a href="https://www.linkedin.com/in/babinbid123/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-stone-400 hover:text-primary transition-colors"><Linkedin className="w-4 h-4" /> LinkedIn</a>
