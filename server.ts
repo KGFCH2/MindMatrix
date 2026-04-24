@@ -60,22 +60,53 @@ app.post("/api/ai/chat", async (req, res) => {
     const maxDigit = gridSize;
     const validDigits = Array.from({length: maxDigit}, (_, i) => i + 1).join(', ');
     
-    const systemPrompt = `You are MindMatrix, an expert Sudoku AI assistant. You are helping with a ${gridSize}x${gridSize} Sudoku puzzle.
+    // HARD-CODED CHECK for Identity/Creator questions
+    const lowerMsg = message.toLowerCase();
+    
+    // Creator Attribution
+    const creatorKeywords = ["babin", "bid", "creator", "owner", "developer", "make you", "made you", "build you", "built you", "create you", "created you", "make u", "made u", "build u", "built u", "create u", "created u"];
+    if (creatorKeywords.some(keyword => lowerMsg.includes(keyword))) {
+      return res.json({ 
+        response: "I was built by **Babin Bid**.\n\nConnect with my creator:\n\n**GitHub:** https://github.com/KGFCH2\n\n**LinkedIn:** https://www.linkedin.com/in/babinbid123/\n\n**Email:** mailto:babinbid05@gmail.com",
+        success: true 
+      });
+    }
 
-CRITICAL RULES:
-- Only suggest digits from 1 to ${maxDigit} (${validDigits})
-- Never mention or suggest digits ${maxDigit + 1} or higher
-- For ${gridSize}x${gridSize} grids, valid moves are only 1-${maxDigit}
+    // Identity Identification
+    const identityKeywords = ["who are you", "what are you", "who are u", "what are u", "identify yourself", "who r u", "who r u ?", "who are you?", "who r u?"];
+    if (identityKeywords.some(keyword => lowerMsg === keyword || lowerMsg.startsWith(keyword))) {
+      return res.json({ 
+        response: "I am **MindMatrix**, your expert Sudoku AI assistant built by **Babin Bid**. I'm here to help you solve Sudoku puzzles and provide strategic insights.",
+        success: true 
+      });
+    }
+
+    // Greeting Intercept
+    const greetings = ["hey", "hi", "hello", "hii", "helloo", "hey there", "good morning", "good evening", "good afternoon"];
+    if (greetings.some(g => lowerMsg.startsWith(g))) {
+        return res.json({
+            response: "Hello! I'm **MindMatrix**, your expert Sudoku AI assistant built by **Babin Bid**. How can I help you with your puzzle today?",
+            success: true
+        });
+    }
+
+    const systemPrompt = `You are MindMatrix, an expert Sudoku AI assistant built by Babin Bid.
+
+PERSONALITY:
+- You are an expert, encouraging, and helpful assistant.
+- You are multilingual and can speak Bengali, Hindi, and other languages fluently.
+- You respond naturally to greetings and conversational openers.
+
+SCOPE:
+1. Your primary focus is this "MindMatrix" Sudoku application, Sudoku rules, puzzle-solving strategies, grid analysis, and teaching users how to play.
+2. If asked about something completely unrelated to Sudoku or this app (e.g., politics, world news, general knowledge, non-Sudoku jokes), you should politely say: "I am capable of answering only application-related questions or puzzle-solving questions."
+3. DO NOT use the restricted phrase for greetings, language requests, or Sudoku learning questions. Respond to those naturally in the user's language.
+
+SUDOKU RULES for the current ${gridSize}x${gridSize} grid:
+- Only suggest digits 1 to ${maxDigit}
 - Current grid state: ${JSON.stringify(grid)}
 
-When providing hints or solving assistance:
-- Always stay within the ${maxDigit} digit range
-- Explain Sudoku rules and strategies clearly
-- Be encouraging and educational
-- Provide step-by-step logical reasoning
-- Suggest multiple possible approaches when appropriate
-
-Remember: This is a ${gridSize}x${gridSize} puzzle, so only use digits 1-${maxDigit}!`;
+When providing hints, give clear logical reasoning.`;
 
     try {
       // Try Gemini first

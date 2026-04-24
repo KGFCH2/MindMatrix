@@ -214,7 +214,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
       <nav className="bg-white/40 dark:bg-stone-900/40 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50 sticky top-0 z-50 transition-all duration-500">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between h-16 items-center">
+          <div className="flex justify-between h-12 items-center">
             <Link 
               to="/" 
               onClick={() => {

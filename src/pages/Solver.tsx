@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, RotateCcw, Lightbulb, Zap, Info, AlertCircle, CheckCircle2, Loader2, ChevronDown, ChevronUp, Brain, Trophy, PartyPopper, Share2, Timer, LayoutGrid, Medal, Star } from 'lucide-react';
+import { Play, RotateCcw, Lightbulb, Zap, Info, AlertCircle, CheckCircle2, Loader2, ChevronDown, ChevronUp, Brain, Trophy, PartyPopper, Share2, Timer, LayoutGrid, Medal, Star, X, MessageCircle } from 'lucide-react';
 import { solveSudoku, generateSudoku, analyzeSudoku, getHint } from '../services/api';
 import { useLocation } from 'react-router-dom';
 import confetti from 'canvas-confetti';
@@ -14,10 +14,11 @@ export default function Solver() {
   const [grid, setGrid] = useState<Grid>(Array.from({ length: 6 }, () => Array(6).fill(0)));
   const [initialGrid, setInitialGrid] = useState<Grid>(Array.from({ length: 6 }, () => Array(6).fill(0)));
   const [solutionGrid, setSolutionGrid] = useState<Grid | null>(null);
-  
+
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<number | null>(null);
+  const confettiIntervalRef = useRef<number | null>(null);
   const animationRef = useRef<number | null>(null);
 
   const [solving, setSolving] = useState(false);
@@ -31,6 +32,51 @@ export default function Solver() {
   const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [wasAssisted, setWasAssisted] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'bot'; text: string }[]>([]);
+
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [chatHistory, isAiThinking]);
+
+  const formatChatMessage = (text: string, isUser: boolean) => {
+    // Regex to capture URLs and Mailto links
+    const urlRegex = /((?:https?:\/\/|mailto:)[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, i) => {
+      if (part && part.match(/^(?:https?:\/\/|mailto:)/)) {
+        return (
+          <a 
+            key={i} 
+            href={part} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className={`underline font-black break-all ${isUser ? 'text-white' : 'text-primary'}`}
+          >
+            {part}
+          </a>
+        );
+      }
+      
+      const boldParts = part.split(/(\*\*[^*]+\*\*)/g);
+      return boldParts.map((bp, bi) => {
+        if (bp.startsWith('**') && bp.endsWith('**')) {
+          return <strong key={`${i}-${bi}`} className="font-black">{bp.slice(2, -2)}</strong>;
+        }
+        const italicParts = bp.split(/(\*[^*]+\*)/g);
+        return italicParts.map((ip, ii) => {
+          if (ip.startsWith('*') && ip.endsWith('*')) {
+            return <em key={`${i}-${bi}-${ii}`} className="italic opacity-90">{ip.slice(1, -1)}</em>;
+          }
+          return ip;
+        });
+      });
+    });
+  };
   const [error, setError] = useState<string | null>(null);
   const [timeTaken, setTimeTaken] = useState<number | null>(null);
   const [activeCell, setActiveCell] = useState<{ r: number; c: number } | null>(null);
@@ -86,37 +132,50 @@ export default function Solver() {
   const triggerSuccess = () => {
     setShowSuccess(true);
     // Always celebrate with party confetti!
-    const duration = 7 * 1000;
+    const duration = 6 * 1000;
     const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 45, spread: 360, ticks: 100, zIndex: 10000, colors: ['#f43f5e', '#10b981', '#fbbf24'] };
+    const defaults = { startVelocity: 45, spread: 360, ticks: 100, zIndex: 1000000, colors: ['#f43f5e', '#10b981', '#fbbf24'] };
 
     const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-    const interval: any = setInterval(function() {
+    const interval: any = setInterval(function () {
       const timeLeft = animationEnd - Date.now();
+
+      // Small delay before starting confetti so the trophy modal appears first
+      if (Date.now() < animationEnd - duration + 800) return;
 
       if (timeLeft <= 0) {
         return clearInterval(interval);
       }
 
-      const particleCount = 40 * (timeLeft / duration);
-      
+      const particleCount = 60 * (timeLeft / duration);
+
       // Centralized burst that feels part of the trophy page
-      confetti({ 
-        ...defaults, 
-        particleCount, 
+      confetti({
+        ...defaults,
+        particleCount,
         origin: { x: 0.5, y: 0.6 },
         scalar: 1.2,
         drift: 0,
         gravity: 0.8
       });
-      
+
       // Smaller side bursts relative to center
       if (timeLeft % 800 < 200) {
-        confetti({ ...defaults, particleCount: 20, origin: { x: 0.3, y: 0.6 } });
-        confetti({ ...defaults, particleCount: 20, origin: { x: 0.7, y: 0.6 } });
+        confetti({
+          ...defaults,
+          particleCount: particleCount * 0.5,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        });
+        confetti({
+          ...defaults,
+          particleCount: particleCount * 0.5,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        });
       }
-    }, 400);
+    }, 250);
+
+    confettiIntervalRef.current = interval;
   };
 
   const handleCellChange = (r: number, c: number, val: string) => {
@@ -173,7 +232,7 @@ export default function Solver() {
       if (result.solvedGrid) {
         const solveSteps = result.steps;
         let stepIndex = 0;
-        
+
         const animate = () => {
           if (stepIndex >= solveSteps.length) {
             setAnimating(false);
@@ -255,7 +314,7 @@ export default function Solver() {
           text: text,
           url: window.location.href,
         });
-      } catch (err) {}
+      } catch (err) { }
     } else {
       navigator.clipboard.writeText(`${text} ${window.location.href}`);
       alert("Result copied to clipboard!");
@@ -265,7 +324,7 @@ export default function Solver() {
   const getTrophyIcon = () => {
     const diff = analysis?.difficulty || 'Easy';
     const sizeLabel = gridSize === 6 ? '6x6' : '9x9';
-    
+
     if (gridSize === 6) {
       switch (diff) {
         case 'Hard': return (
@@ -315,14 +374,20 @@ export default function Solver() {
     try {
       const result = await analyzeSudoku(grid);
       setAnalysis(result);
-    } catch (err) {}
+    } catch (err) { }
   };
 
-  const handleAiChat = async () => {
+  const handleAiChat = async (customMessage?: string) => {
     if (isGridCompleteAndValid(grid)) {
       setAiResponse("All grids are filled; nothing to recommend. Start a new game and ask me.");
       return;
     }
+
+    const messageToSend = customMessage || "Analyze this Sudoku grid and give me a strategic tip for my next move. Be concise.";
+    const historyMessage = customMessage || "Can you analyze the current grid?";
+
+    setChatHistory(prev => [...prev, { role: 'user', text: historyMessage }]);
+
     setIsAiThinking(true);
     setAiResponse(null);
     try {
@@ -330,9 +395,9 @@ export default function Solver() {
       const response = await fetch(`${baseUrl}/api/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: "Analyze this Sudoku grid and give me a strategic tip for my next move. Be concise.",
-          grid 
+        body: JSON.stringify({
+          message: messageToSend,
+          grid
         })
       });
 
@@ -353,13 +418,16 @@ export default function Solver() {
       if (data.error) {
         setError(data.error);
       } else {
-        setAiResponse(data.response);
+        const botResponse = data.response;
+        setAiResponse(botResponse);
+        setChatHistory(prev => [...prev, { role: 'bot', text: botResponse }]);
       }
     } catch (err) {
       console.error("AI Chat Error:", err);
       setError("Failed to connect to AI service. Please check your internet connection.");
     } finally {
       setIsAiThinking(false);
+      setChatInput("");
     }
   };
 
@@ -393,6 +461,10 @@ export default function Solver() {
     setWasAssisted(false);
     setHistory([]);
     setShowSuccess(false);
+    if (confettiIntervalRef.current) {
+      clearInterval(confettiIntervalRef.current);
+      confettiIntervalRef.current = null;
+    }
     setShowResetConfirm(false);
     setStartTime(null);
     setElapsedTime(0);
@@ -401,7 +473,7 @@ export default function Solver() {
 
   const handleKeyDown = (e: React.KeyboardEvent, r: number, c: number) => {
     if (animating || solving || isProcessing) return;
-    
+
     switch (e.key) {
       case 'ArrowUp':
         if (r > 0) setActiveCell({ r: r - 1, c });
@@ -436,45 +508,56 @@ export default function Solver() {
   }, [activeCell]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 py-2 relative">
+    <div className="max-w-6xl mx-auto space-y-3 pt-1 pb-4 relative">
       <AnimatePresence>
         {showSuccess && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}
-              className="z-99999 flex items-center justify-center p-0 bg-white/30 dark:bg-black/30 backdrop-blur-[200px]"
-            >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}
+            className="z-99999 flex items-center justify-center p-0 bg-stone-900/40 backdrop-blur-md"
+          >
+
             <motion.div
               initial={{ opacity: 0, scale: 0.8, y: 100 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 100 }}
-              className="bg-white dark:bg-stone-900 p-8 rounded-[48px] border-4 border-stone-100 dark:border-stone-800 shadow-2xl max-w-md w-full space-y-8 text-center relative"
+              className="bg-white/90 dark:bg-stone-900/90 backdrop-blur-xl p-10 rounded-[56px] border-4 border-white/50 dark:border-stone-800/50 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.3)] max-w-md w-full space-y-8 text-center relative z-10"
             >
-              
               <div className="space-y-6">
-                <motion.div
-                  initial={{ rotate: -20, scale: 0 }}
-                  animate={{ rotate: 0, scale: 1 }}
-                  transition={{ type: "spring", damping: 12, stiffness: 120, delay: 0.3 }}
-                  className={`w-32 h-32 rounded-4xl flex items-center justify-center mx-auto shadow-2xl bg-stone-50 dark:bg-stone-800 border border-stone-100 dark:border-stone-700`}
-                >
-                  {wasAssisted ? (
-                    <div className="flex flex-col items-center">
-                      <Brain className="w-20 h-20 text-stone-300 dark:text-stone-700" />
-                      <span className="text-[10px] font-bold text-stone-400 mt-1 uppercase tracking-tighter">AI Assisted</span>
-                    </div>
-                  ) : getTrophyIcon()}
-                </motion.div>
-                
+                <div className="relative">
+                  {/* Celebratory Radial Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-amber-500/30 blur-[80px] rounded-full animate-pulse" />
+                  <motion.div
+                    initial={{ rotate: -20, scale: 0 }}
+                    animate={{ rotate: [0, -5, 5, 0], scale: 1 }}
+                    transition={{ 
+                      rotate: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                      scale: { type: "spring", damping: 12, stiffness: 120, delay: 0.3 }
+                    }}
+                    className={`w-36 h-36 rounded-[40px] flex items-center justify-center mx-auto shadow-2xl bg-white dark:bg-stone-800 border-2 border-stone-100 dark:border-stone-700 relative z-20`}
+                  >
+                    {wasAssisted ? (
+                      <div className="flex flex-col items-center">
+                        <Brain className="w-24 h-24 text-stone-300 dark:text-stone-700" />
+                        <span className="text-[10px] font-bold text-stone-400 mt-1 uppercase tracking-tighter">AI Assisted</span>
+                      </div>
+                    ) : getTrophyIcon()}
+                  </motion.div>
+                </div>
+
                 <div className="space-y-1">
-                  <h2 className="text-3xl font-black text-stone-900 dark:text-stone-100 tracking-tight uppercase">
-                    {wasAssisted ? "Grid Solved" : "Masterpiece!"}
-                  </h2>
+                  <motion.h2 
+                    animate={{ color: ['#f43f5e', '#10b981', '#fbbf24', '#f43f5e'] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                    className="text-4xl font-black tracking-tighter uppercase italic"
+                  >
+                    {wasAssisted ? "Grid Solved" : "MASTERPIECE!"}
+                  </motion.h2>
                   <p className="text-lg text-stone-500 dark:text-stone-400 font-medium">
-                    {wasAssisted 
-                      ? "The AI finished the grid for you. Try solving it manually next time for a trophy!" 
+                    {wasAssisted
+                      ? "The AI finished the grid for you. Try solving it manually next time for a trophy!"
                       : `You've successfully conquered the ${gridSize}x${gridSize} grid.`
                     }
                   </p>
@@ -503,6 +586,10 @@ export default function Solver() {
                   <button
                     onClick={() => {
                       setShowSuccess(false);
+                      if (confettiIntervalRef.current) {
+                        clearInterval(confettiIntervalRef.current);
+                        confettiIntervalRef.current = null;
+                      }
                       setStartTime(null);
                       setElapsedTime(0);
                     }}
@@ -560,54 +647,125 @@ export default function Solver() {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
-        {/* Left: Sudoku Grid */}
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-white dark:bg-stone-900 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-800 shadow-sm">
-                <Timer className="w-4 h-4 text-primary" />
-                <span className="font-mono font-bold text-lg text-stone-900 dark:text-stone-100">{formatTime(elapsedTime)}</span>
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:-mt-0">
+        {/* Left Column: Controls */}
+        <div className="hidden lg:flex w-full lg:w-52 flex-col gap-2.5 shrink-0 order-3 lg:order-1 h-auto lg:h-[480px] lg:pt-16">
+          <div className="bg-white dark:bg-stone-900 p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 flex-1 flex flex-col space-y-2.5 shadow-lg shadow-stone-100 dark:shadow-stone-950 transition-colors duration-500">
+            <h3 className="text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-stone-100">
+              <Brain className="w-5 h-5 text-primary" />
+              Controls
+            </h3>
+
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">New Puzzle</p>
+              <div className="grid grid-cols-1 gap-1.5">
+                {(['Easy', 'Medium', 'Hard'] as const).map((diff) => (
+                  <button
+                    key={diff}
+                    onClick={() => handleGenerate(diff)}
+                    className={`
+                      px-3 py-2 rounded-lg font-bold text-left transition-all border-2 text-sm
+                      ${difficulty === diff ? 'bg-primary/10 border-primary text-primary' : 'bg-stone-50 dark:bg-stone-800 border-transparent text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}
+                    `}
+                  >
+                    {diff}
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="flex bg-stone-200 dark:bg-stone-800 p-1 rounded-xl gap-1">
-              <button
-                onClick={handleUndo}
-                disabled={history.length === 0 || solving || animating || isProcessing}
-                className="px-3 py-1.5 rounded-lg font-bold text-xs transition-all bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-100 shadow-sm disabled:opacity-30 flex items-center gap-1"
-              >
-                <RotateCcw className="w-3 h-3" /> Undo
-              </button>
-              <div className="w-px h-full bg-stone-300 dark:bg-stone-600 mx-1" />
-              {[6, 9].map((size) => (
+
+            <div className="pt-3 border-t border-stone-100 dark:border-stone-800 space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">Empty Cells</span>
+                <span className="text-sm font-bold text-stone-900 dark:text-stone-100">{analysis?.emptyCells || 0}</span>
+              </div>
+              {timeTaken !== null && (
+                <div className="flex justify-between items-center text-primary">
+                  <span className="text-xs font-medium">Solve Time</span>
+                  <span className="text-sm font-bold">{timeTaken}ms</span>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-stone-100 dark:border-stone-800 space-y-2">
+              <p className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Layout & History</p>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex bg-stone-100 dark:bg-stone-800 p-1 rounded-xl gap-1">
+                  {[6, 9].map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => handleGridSizeChange(size as 6 | 9)}
+                      className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition-all ${gridSize === size ? 'bg-white dark:bg-stone-700 text-primary shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+                    >
+                      {size}x{size}
+                    </button>
+                  ))}
+                </div>
                 <button
-                  key={size}
-                  onClick={() => handleGridSizeChange(size as 6 | 9)}
-                  className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all ${gridSize === size ? 'bg-white dark:bg-stone-700 text-primary shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+                  onClick={handleUndo}
+                  disabled={history.length === 0 || solving || animating || isProcessing}
+                  className="w-full py-2 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-xl font-bold text-xs hover:bg-stone-200 dark:hover:bg-stone-700 transition-all disabled:opacity-30 flex items-center justify-center gap-2 border border-stone-200 dark:border-stone-700 shadow-sm"
                 >
-                  {size}x{size}
+                  <RotateCcw className="w-3.5 h-3.5" /> Undo Move
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Center Column: Sudoku Grid */}
+        <div className="flex-1 space-y-2.5 order-1 lg:order-2">
+          {/* Mobile Top Controls (Simplified) */}
+          <div className="lg:hidden bg-white dark:bg-stone-900 p-2 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm space-y-2">
+            <div className="flex gap-1">
+              {(['Easy', 'Medium', 'Hard'] as const).map((diff) => (
+                <button
+                  key={diff}
+                  onClick={() => handleGenerate(diff)}
+                  className={`flex-1 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all border ${difficulty === diff ? 'bg-primary/10 border-primary text-primary' : 'bg-stone-50 dark:bg-stone-800 border-transparent text-stone-500'}`}
+                >
+                  {diff}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Mobile Difficulty Controls */}
-          <div className="lg:hidden grid grid-cols-3 gap-2 px-2">
-            {(['Easy', 'Medium', 'Hard'] as const).map((diff) => (
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl gap-1">
+                {[6, 9].map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => handleGridSizeChange(size as 6 | 9)}
+                    className={`flex-1 py-1 rounded-lg font-bold text-[10px] transition-all ${gridSize === size ? 'bg-white dark:bg-stone-700 text-primary shadow-sm' : 'text-stone-500'}`}
+                  >
+                    {size}x{size}
+                  </button>
+                ))}
+              </div>
               <button
-                key={diff}
-                onClick={() => handleGenerate(diff)}
-                className={`
-                  px-2 py-2.5 rounded-xl font-bold text-xs transition-all border-2
-                  ${difficulty === diff ? 'bg-primary/10 border-primary text-primary' : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400'}
-                `}
+                onClick={handleUndo}
+                disabled={history.length === 0 || solving || animating || isProcessing}
+                className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-xl font-bold text-[10px] uppercase hover:bg-stone-200 transition-all disabled:opacity-30 flex items-center gap-1 border border-stone-200 dark:border-stone-700 shadow-sm"
               >
-                {diff}
+                <RotateCcw className="w-3 h-3" /> Undo
               </button>
-            ))}
+            </div>
           </div>
 
-          <div className="bg-white dark:bg-stone-900 p-2 md:p-3 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xl shadow-stone-100 dark:shadow-stone-950 transition-colors duration-500 max-w-125 mx-auto">
+          <div className="flex items-center justify-center px-2 gap-10 py-2">
+            <div className="flex items-center gap-3 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 px-5 rounded-2xl shadow-xl shadow-primary/20 w-40 h-12 justify-center">
+              <Timer className="w-5 h-5 text-primary" />
+              <span className="font-mono font-black text-xl tracking-tighter">{formatTime(elapsedTime)}</span>
+            </div>
+
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              disabled={solving || animating || isProcessing}
+              className="flex items-center gap-2 px-6 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 border-2 border-stone-200 dark:border-stone-800 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-red-500 hover:text-red-500 hover:scale-105 transition-all disabled:opacity-50 shadow-md active:scale-95 w-40 h-12 justify-center"
+            >
+              <RotateCcw className="w-4 h-4" /> Reset
+            </button>
+          </div>
+
+          <div className="bg-white dark:bg-stone-900 p-2 md:p-2.5 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xl shadow-stone-100 dark:shadow-stone-950 transition-colors duration-500 max-w-115 mx-auto">
             <div className={`grid ${gridSize === 6 ? 'grid-cols-6' : 'grid-cols-9'} border-2 border-stone-900 dark:border-stone-100 overflow-hidden rounded-lg`}>
               {grid.map((row, r) =>
                 row.map((cell, c) => {
@@ -625,10 +783,10 @@ export default function Solver() {
                         ${(c + 1) % boxCols === 0 && c !== gridSize - 1 ? 'border-r-2 border-r-stone-900 dark:border-r-stone-100' : ''}
                         ${(r + 1) % boxRows === 0 && r !== gridSize - 1 ? 'border-b-2 border-b-stone-900 dark:border-b-stone-100' : ''}
                         ${activeCell?.r === r && activeCell?.c === c ? 'bg-primary/10 ring-2 ring-inset ring-primary' : 'hover:bg-primary/5'}
-                        ${isInitial(r, c) ? 'text-stone-900 dark:text-stone-100 bg-stone-50/50 dark:bg-stone-800/50' : 
+                        ${isInitial(r, c) ? 'text-stone-900 dark:text-stone-100 bg-stone-50/50 dark:bg-stone-800/50' :
                           isCorrect ? 'text-green-600 dark:text-emerald-400 bg-green-50 dark:bg-emerald-900/20' :
-                          isWrong ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' :
-                          'text-primary'}
+                            isWrong ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' :
+                              'text-primary'}
                         transition-all duration-150
                       `}
                     >
@@ -651,7 +809,7 @@ export default function Solver() {
             </div>
           </div>
 
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-1.5 max-w-125 mx-auto px-2">
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-1 max-w-115 mx-auto px-2">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
               <button
                 key={num}
@@ -660,8 +818,8 @@ export default function Solver() {
                 }}
                 className={`
                   aspect-square flex items-center justify-center rounded-xl font-black transition-all
-                  ${num === 0 
-                    ? 'bg-stone-100 dark:bg-stone-800 text-stone-600 border border-stone-200 dark:border-stone-700' 
+                  ${num === 0
+                    ? 'bg-stone-100 dark:bg-stone-800 text-stone-600 border border-stone-200 dark:border-stone-700'
                     : 'bg-white dark:bg-stone-900 border-2 border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 hover:border-primary hover:text-primary active:scale-95 shadow-sm'}
                 `}
               >
@@ -670,7 +828,7 @@ export default function Solver() {
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className="flex flex-wrap gap-1.5 justify-center">
             <button
               onClick={handleSolve}
               disabled={solving || animating || isProcessing}
@@ -682,7 +840,7 @@ export default function Solver() {
             <button
               onClick={handleAnimateSolve}
               disabled={solving || animating || isProcessing}
-              className="flex items-center gap-1.5 px-3 py-2 bg-primary dark:bg-stone-800 text-white dark:text-stone-100 rounded-xl font-bold text-sm hover:bg-stone-900 dark:hover:bg-stone-700 hover:scale-105 hover:shadow-xl transition-all disabled:opacity-50 shadow-md min-w-32.5 justify-center"
+              className="flex items-center gap-1 px-3 py-2 bg-primary dark:bg-stone-800 text-white dark:text-stone-100 rounded-xl font-bold text-sm hover:bg-stone-900 dark:hover:bg-stone-700 hover:scale-105 hover:shadow-xl transition-all disabled:opacity-50 shadow-md min-w-30 justify-center"
             >
               {isProcessing && animating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               Animate
@@ -690,84 +848,102 @@ export default function Solver() {
             <p className="w-full text-[9px] text-center text-stone-400 dark:text-stone-500 font-medium mt-1">
               Note: Using <span className="text-primary font-bold">Animate</span> or <span className="text-stone-900 dark:text-stone-100 font-bold">Solve</span> disqualifies you from winning a trophy.
             </p>
-            <button
-              onClick={handleHint}
-              disabled={solving || animating || isProcessing}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 border-2 border-stone-200 dark:border-stone-800 rounded-xl font-bold text-sm hover:border-primary hover:scale-105 hover:shadow-lg transition-all disabled:opacity-50 min-w-27.5 justify-center"
-            >
-              {isProcessing && !solving && !animating && hint === null ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightbulb className="w-4 h-4 text-amber-500" />}
-              Hint
-            </button>
-            <button
-              onClick={() => setShowResetConfirm(true)}
-              disabled={solving || animating || isProcessing}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 border-2 border-stone-200 dark:border-stone-700 rounded-xl font-bold text-sm hover:border-red-500 hover:text-red-500 hover:scale-105 hover:shadow-lg transition-all disabled:opacity-50 min-w-25 justify-center"
-            >
-              {isProcessing && !solving && !animating && hint !== null ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-              Reset
-            </button>
           </div>
         </div>
 
-        {/* Right: Controls & Info */}
-        <div className="w-full lg:w-64 space-y-3">
-          <div className="bg-white dark:bg-stone-900 p-4 rounded-xl border border-stone-200 dark:border-stone-800 space-y-3 shadow-lg shadow-stone-100 dark:shadow-stone-950 transition-colors duration-500">
-            <h3 className="text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-stone-100">
-              <Brain className="w-5 h-5 text-primary" />
-              Controls
-            </h3>
-            
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">New Puzzle</p>
-              <div className="grid grid-cols-1 gap-1.5">
-                {(['Easy', 'Medium', 'Hard'] as const).map((diff) => (
-                  <button
-                    key={diff}
-                    onClick={() => handleGenerate(diff)}
-                    className={`
-                      px-3 py-2 rounded-lg font-bold text-left transition-all border-2 text-sm
-                      ${difficulty === diff ? 'bg-primary/10 border-primary text-primary' : 'bg-stone-50 dark:bg-stone-800 border-transparent text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}
-                    `}
-                  >
-                    {diff}
-                  </button>
-                ))}
+        {/* Right Column: AI Answers & Info */}
+        <div className="hidden lg:flex w-full lg:w-96 space-y-2.5 shrink-0 flex-col h-[600px] lg:h-[480px] lg:pt-16 order-2 lg:order-3">
+          {/* Chatbot Interface */}
+          <div className="bg-white dark:bg-stone-900 flex-1 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xl flex flex-col overflow-hidden transition-colors duration-500">
+            <div className="p-3.5 border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/30 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-none">MindMatrix AI</h3>
+                  <span className="text-[10px] text-pink-500 dark:text-green-500 font-medium">Online Insight Bot</span>
+                </div>
               </div>
-            </div>
-
-            <div className="pt-4 border-t border-stone-100 dark:border-stone-800 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">Difficulty</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                  difficulty === 'Hard' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : 
-                  difficulty === 'Medium' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' : 
-                  difficulty === 'Easy' ? 'bg-primary/10 text-primary' : 'bg-stone-100 dark:bg-stone-800 text-stone-400'
-                }`}>
-                  {difficulty || 'Unknown'}
-                </span>
-              </div>
-              
               <button
-                onClick={handleAiChat}
-                disabled={isAiThinking || isProcessing}
-                className="w-full flex items-center justify-center gap-2 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-xl font-bold text-xs hover:bg-primary dark:hover:bg-primary dark:hover:text-white hover:scale-[1.02] hover:shadow-lg transition-all disabled:opacity-50"
+                onClick={() => setChatHistory([])}
+                className="text-[10px] font-bold text-stone-400 hover:text-red-500 transition-colors uppercase tracking-widest"
               >
-                {isAiThinking ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
-                Ask MindMatrix
+                Clear
               </button>
             </div>
 
-            <div className="pt-4 border-t border-stone-100 dark:border-stone-800 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-stone-500 dark:text-stone-400 font-medium">Empty Cells</span>
-                <span className="text-sm font-bold text-stone-900 dark:text-stone-100">{analysis?.emptyCells || 0}</span>
-              </div>
-              {timeTaken !== null && (
-                <div className="flex justify-between items-center text-primary">
-                  <span className="text-xs font-medium">Solve Time</span>
-                  <span className="text-sm font-bold">{timeTaken}ms</span>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-white dark:bg-stone-900">
+              {chatHistory.length === 0 && !aiResponse && (
+                <div className="h-full flex flex-col items-center justify-center text-center p-4 space-y-2 opacity-50">
+                  <Brain className="w-10 h-10 text-stone-300 mb-2" />
+                  <p className="text-xs font-medium text-stone-500">Ask me anything about the grid or for a strategy move!</p>
                 </div>
               )}
+
+              {chatHistory.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`
+                    max-w-[85%] p-2.5 rounded-2xl text-[11px] font-medium leading-relaxed
+                    ${msg.role === 'user'
+                      ? 'bg-primary text-white rounded-tr-none'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 rounded-tl-none border border-stone-200 dark:border-stone-700 shadow-sm'}
+                  `}>
+                    {formatChatMessage(msg.text, msg.role === 'user')}
+                  </div>
+                </div>
+              ))}
+
+              {isAiThinking && (
+                <div className="flex justify-start">
+                  <div className="bg-stone-100 dark:bg-stone-800 p-2.5 rounded-2xl rounded-tl-none border border-stone-200 dark:border-stone-700 shadow-sm flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                    <span className="text-[10px] font-medium text-stone-500">Thinking...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <div className="p-3 bg-stone-50 dark:bg-stone-800/50 border-t border-stone-100 dark:border-stone-800">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (chatInput.trim() && !isAiThinking) handleAiChat(chatInput);
+                }}
+                className="relative"
+              >
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask for a solution or tip..."
+                  disabled={isAiThinking}
+                  className="w-full bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl py-2.5 pl-4 pr-12 text-xs text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() || isAiThinking}
+                  className="absolute right-1.5 top-1.5 p-1.5 bg-primary text-white rounded-lg hover:bg-secondary transition-all disabled:opacity-30 disabled:scale-95"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                </button>
+              </form>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => handleAiChat()}
+                  disabled={isAiThinking || isProcessing}
+                  className="flex-1 text-[9px] font-bold py-1.5 bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-lg hover:bg-primary hover:text-white transition-all uppercase tracking-tighter"
+                >
+                  Analyze Grid
+                </button>
+                <button
+                  onClick={handleHint}
+                  className="flex-1 text-[9px] font-bold py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-500 hover:text-white transition-all uppercase tracking-tighter"
+                >
+                  Quick Hint
+                </button>
+              </div>
             </div>
           </div>
 
@@ -777,33 +953,10 @@ export default function Solver() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 p-3 rounded-xl flex items-start gap-2 text-red-700 dark:text-red-400"
+                className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 p-3 rounded-xl flex items-start gap-2 text-red-700 dark:text-red-400 shadow-sm"
               >
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <p className="text-xs font-medium">{error}</p>
-              </motion.div>
-            )}
-
-            {aiResponse && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 p-3 rounded-xl space-y-1.5 shadow-xl"
-              >
-                <div className="flex items-center gap-1.5 font-bold text-xs">
-                  <Brain className="w-4 h-4 text-primary" />
-                  MindMatrix Insight
-                </div>
-                <p className="text-[10px] font-medium leading-relaxed">
-                  {aiResponse}
-                </p>
-                <button 
-                  onClick={() => setAiResponse(null)}
-                  className="text-[9px] uppercase tracking-widest font-black opacity-50 hover:opacity-100"
-                >
-                  Dismiss
-                </button>
               </motion.div>
             )}
 
@@ -812,13 +965,21 @@ export default function Solver() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 p-3 rounded-xl space-y-1.5"
+                className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 p-3.5 rounded-xl space-y-2 shadow-sm relative"
               >
-                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-bold text-xs">
-                  <Lightbulb className="w-4 h-4" />
-                  AI Suggestion
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 font-bold text-xs uppercase tracking-wider">
+                    <Lightbulb className="w-4 h-4" />
+                    AI Suggestion
+                  </div>
+                  <button
+                    onClick={() => setHint(null)}
+                    className="p-1 hover:bg-amber-100 dark:hover:bg-amber-800/50 rounded-lg transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  </button>
                 </div>
-                <p className="text-xs text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                <p className="text-xs text-amber-800 dark:text-amber-300 font-medium leading-relaxed pr-4">
                   {hint.explanation}
                 </p>
               </motion.div>
@@ -826,15 +987,15 @@ export default function Solver() {
           </AnimatePresence>
 
           {steps.length > 0 && (
-            <div className="bg-white dark:bg-stone-900 p-4 rounded-xl border border-stone-200 dark:border-stone-800 shadow-lg shadow-stone-100 dark:shadow-stone-950 transition-colors duration-500">
-              <button 
+            <div className="bg-white dark:bg-stone-900 p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 shadow-lg shadow-stone-100 dark:shadow-stone-950 transition-colors duration-500">
+              <button
                 onClick={() => setShowSteps(!showSteps)}
-                className="w-full flex items-center justify-between font-bold text-stone-900 dark:text-stone-100 text-sm"
+                className="w-full flex items-center justify-between font-bold text-stone-900 dark:text-stone-100 text-xs uppercase tracking-widest"
               >
-                Logic
-                {showSteps ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Solver Logic
+                {showSteps ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />}
               </button>
-              
+
               <AnimatePresence>
                 {showSteps && (
                   <motion.div
@@ -843,14 +1004,14 @@ export default function Solver() {
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="pt-3 space-y-1.5 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="pt-3 space-y-1.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                       {steps.slice(0, 50).map((step, i) => (
-                        <div key={i} className="text-[10px] flex items-center gap-1.5 text-stone-500 dark:text-stone-400">
-                          <span className={`w-1.5 h-1.5 rounded-full ${step.isBacktrack ? 'bg-red-400' : 'bg-primary/40'}`} />
+                        <div key={i} className="text-[10px] flex items-center gap-1.5 text-stone-500 dark:text-stone-400 font-medium">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${step.isBacktrack ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'bg-primary/40'}`} />
                           {step.isBacktrack ? 'Backtrack' : 'Place'} {step.value} at ({step.row + 1}, {step.col + 1})
                         </div>
                       ))}
-                      {steps.length > 50 && <div className="text-[10px] text-stone-400 italic">...and {steps.length - 50} more</div>}
+                      {steps.length > 50 && <div className="text-[10px] text-stone-400 italic pt-1">...and {steps.length - 50} more steps</div>}
                     </div>
                   </motion.div>
                 )}
@@ -859,6 +1020,119 @@ export default function Solver() {
           )}
         </div>
       </div>
+
+      {/* Mobile Floating Chat Button */}
+      <div className="lg:hidden fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => setIsChatModalOpen(true)}
+          className="w-14 h-14 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group relative"
+        >
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-white dark:border-stone-900 animate-pulse" />
+          <MessageCircle className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Mobile Chat Modal */}
+      <AnimatePresence>
+        {isChatModalOpen && (
+          <div className="lg:hidden fixed inset-0 z-[60] flex flex-col bg-white dark:bg-stone-950">
+            <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-stone-900">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 dark:text-stone-100">MindMatrix AI</h3>
+                  <span className="text-[10px] text-pink-500 dark:text-green-500 font-medium uppercase tracking-widest">Active Insight Bot</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsChatModalOpen(false)}
+                className="p-2 hover:bg-stone-200 dark:hover:bg-stone-800 rounded-xl transition-colors"
+              >
+                <X className="w-6 h-6 text-stone-500" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-stone-50/50 dark:bg-stone-900/50">
+              {chatHistory.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-50">
+                  <Brain className="w-16 h-16 text-stone-300" />
+                  <div>
+                    <p className="text-sm font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest">MindMatrix Intelligence</p>
+                    <p className="text-xs text-stone-500 mt-1">Ask for solutions, tips, or anything about this Sudoku trainer.</p>
+                  </div>
+                </div>
+              )}
+              {chatHistory.map((msg, i) => (
+                <motion.div
+                  initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  key={i}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`
+                    max-w-[85%] p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm
+                    ${msg.role === 'user'
+                      ? 'bg-primary text-white rounded-tr-none'
+                      : 'bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-200 rounded-tl-none border border-stone-200 dark:border-stone-700'}
+                  `}>
+                    {formatChatMessage(msg.text, msg.role === 'user')}
+                  </div>
+                </motion.div>
+              ))}
+              {isAiThinking && (
+                <div className="flex justify-start">
+                  <div className="bg-white dark:bg-stone-800 p-4 rounded-2xl rounded-tl-none border border-stone-200 dark:border-stone-700 shadow-sm flex items-center gap-3">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <span className="text-xs font-bold text-stone-400 uppercase tracking-widest">Analyzing Grid...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <div className="p-4 bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 pb-10">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (chatInput.trim() && !isAiThinking) handleAiChat(chatInput);
+                }}
+                className="relative"
+              >
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask for help or strategy..."
+                  className="w-full bg-stone-100 dark:bg-stone-800 border-none rounded-2xl py-4 pl-5 pr-14 text-sm focus:ring-2 focus:ring-primary/30 outline-none transition-all"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() || isAiThinking}
+                  className="absolute right-2 top-2 p-3 bg-primary text-white rounded-xl shadow-lg disabled:opacity-30"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                </button>
+              </form>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => handleAiChat()}
+                  className="flex-1 py-3 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                >
+                  Grid Intelligence
+                </button>
+                <button
+                  onClick={() => setChatHistory([])}
+                  className="flex-1 py-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                >
+                  Clear History
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
