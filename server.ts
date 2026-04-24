@@ -104,7 +104,7 @@ Remember: This is a ${gridSize}x${gridSize} puzzle, so only use digits 1-${maxDi
               },
               { role: "user", content: message }
             ],
-            model: "llama-3-70b-8192", // Using a widely available stable model
+            model: "llama-3.3-70b-versatile", // Using the latest stable versatile model
           });
           
           return res.json({ 

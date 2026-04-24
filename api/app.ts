@@ -69,8 +69,8 @@ Remember: This is a ${gridSize}x${gridSize} puzzle, so only use digits 1-${maxDi
     try {
         if (gemini) {
             try {
-                // Using gemini-1.5-flash which is more stable in different regions than 2.0-flash
-                const model = gemini.getGenerativeModel({ model: "gemini-1.5-flash" });
+                // Using gemini-2.0-flash which is the current stable flash model
+                const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
                 const result = await model.generateContent({
                     contents: [{ role: "user", parts: [{ text: systemPrompt + "\n\nUser question: " + message }] }]
                 });
@@ -87,7 +87,7 @@ Remember: This is a ${gridSize}x${gridSize} puzzle, so only use digits 1-${maxDi
             try {
                 const completion = await groq.chat.completions.create({
                     messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
-                    model: "llama-3.1-70b-versatile", // Upgrading to 3.1 for better stability
+                    model: "llama-3.3-70b-versatile", // Updating to 3.3 as 3.1 is decommissioned
                 });
                 console.log("Groq response success");
                 return res.json({ response: completion.choices[0].message.content, provider: "groq", success: true });
