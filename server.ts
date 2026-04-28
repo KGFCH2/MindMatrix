@@ -36,14 +36,8 @@ app.post("/api/ai/chat", async (req, res) => {
       return res.status(400).json({ error: "Invalid grid provided" });
     }
 
-    // Check if grid is already solved
     const { isGridCompleteAndValid } = await import("./src/lib/sudoku.js");
-    if (isGridCompleteAndValid(grid)) {
-      return res.json({ 
-        response: "All grids are filled; nothing to recommend. Start a new game and ask me.",
-        success: true 
-      });
-    }
+    const gridSolved = isGridCompleteAndValid(grid);
     
     const gemini = getGemini();
     const groq = getGroq();
@@ -89,6 +83,14 @@ app.post("/api/ai/chat", async (req, res) => {
             response: "Hello! I'm **MindMatrix**, your expert Sudoku AI assistant built by **Babin Bid**. How can I help you with your puzzle today?",
             success: true
         });
+    }
+
+    // If grid is solved and we haven't intercepted yet, tell them it's solved
+    if (gridSolved && !message.toLowerCase().includes("who")) {
+      return res.json({ 
+        response: "This puzzle is already solved! 🏆 Start a new game if you'd like more strategic tips, or feel free to ask me anything about Sudoku rules.",
+        success: true 
+      });
     }
 
     const systemPrompt = `You are MindMatrix, an expert Sudoku AI assistant built by Babin Bid.
