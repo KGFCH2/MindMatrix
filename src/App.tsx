@@ -1,14 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Image as ImageIcon, Home as HomeIcon, Grid3X3, BookOpen, HelpCircle, Sun, Moon, Menu, X, Zap, FileText, Lock, Github, Linkedin, Mail } from 'lucide-react';
-import Home from './pages/Home';
-import Solver from './pages/Solver';
-import Learn from './pages/Learn';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
-import FAQ from './pages/FAQ';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
+
+const Home = lazy(() => import('./pages/Home'));
+const Solver = lazy(() => import('./pages/Solver'));
+const Learn = lazy(() => import('./pages/Learn'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const FAQ = lazy(() => import('./pages/FAQ'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -93,9 +94,9 @@ function Layout({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
 
-  // Simulate initial load
+  // Optimized initial load delay for better performance
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 3000);
+    const timer = setTimeout(() => setIsLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -194,7 +195,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                     <motion.div
                       initial={{ width: "0%" }}
                       animate={{ width: "100%" }}
-                      transition={{ duration: 1.5, ease: "easeInOut" }}
+                      transition={{ duration: 1.2, ease: "easeInOut" }}
                       className="h-full bg-linear-to-r from-primary to-secondary"
                     />
                   </div>
@@ -287,8 +288,18 @@ function Layout({ children }: { children: React.ReactNode }) {
           )}
         </AnimatePresence>
       </nav>
-      <main className="grow w-full">
-        {children}
+      <main className="grow w-full relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
       <footer className="bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 py-6 mt-auto transition-colors duration-500 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
         <div className="max-w-7xl mx-auto px-4">
@@ -340,14 +351,16 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/solver" element={<Solver />} />
-            <Route path="/learn" element={<Learn />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/faq" element={<FAQ />} />
-          </Routes>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/solver" element={<Solver />} />
+              <Route path="/learn" element={<Learn />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/faq" element={<FAQ />} />
+            </Routes>
+          </Suspense>
         </Layout>
       </Router>
     </ThemeProvider>
