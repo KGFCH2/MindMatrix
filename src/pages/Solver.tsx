@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, RotateCcw, Lightbulb, Zap, Info, AlertCircle, CheckCircle2, Loader2, ChevronDown, ChevronUp, Brain, Trophy, PartyPopper, Share2, Timer, LayoutGrid, Medal, Star, X, MessageCircle } from 'lucide-react';
-import { solveSudoku, generateSudoku, analyzeSudoku, getHint } from '../services/api';
+import { solveSudoku, generateSudoku, analyzeSudoku, getHint, aiChat } from '../services/api';
 import { useLocation } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { isGridCompleteAndValid } from '../lib/sudoku';
@@ -23,6 +23,7 @@ export default function Solver() {
 
   const [solving, setSolving] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const animatingRef = useRef(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -106,12 +107,21 @@ export default function Solver() {
     };
   }, [startTime, showSuccess, solving, animating]);
 
+  // Debounced analysis to improve "load balancing" performance
   useEffect(() => {
-    handleAnalyze();
+    const timer = setTimeout(() => {
+      handleAnalyze();
+    }, 1000);
+    
     if (isGridCompleteAndValid(grid) && !showSuccess && !solving && !animating) {
-      const timer = setTimeout(() => triggerSuccess(), 500);
-      return () => clearTimeout(timer);
+      const successTimer = setTimeout(() => triggerSuccess(), 500);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(successTimer);
+      };
     }
+    
+    return () => clearTimeout(timer);
   }, [grid, solving, animating]);
 
   useEffect(() => {
@@ -225,35 +235,52 @@ export default function Solver() {
   const handleAnimateSolve = async () => {
     setIsProcessing(true);
     setAnimating(true);
+    animatingRef.current = true;
     setError(null);
     setWasAssisted(true);
     try {
       const result = await solveSudoku(grid);
+      
+      // Safety check: if user clicked 'Stop' while AI was solving, don't start animation
+      if (!animatingRef.current) {
+        setIsProcessing(false);
+        return;
+      }
+
       if (result.solvedGrid) {
         const solveSteps = result.steps;
         let stepIndex = 0;
 
-        const animate = () => {
+        let lastTime = 0;
+        const stepDelay = 80; // Smooth but visible delay (ms)
+
+        const animate = (time: number) => {
+
           if (stepIndex >= solveSteps.length) {
             setAnimating(false);
+            animatingRef.current = false;
             setIsProcessing(false);
             setGrid(result.solvedGrid);
             setTimeTaken(result.timeTaken);
             return;
           }
 
-          const step = solveSteps[stepIndex];
-          setGrid(prev => {
-            const newGrid = prev.map(row => [...row]);
-            newGrid[step.row][step.col] = step.value;
-            return newGrid;
-          });
-          setActiveCell({ r: step.row, c: step.col });
-          stepIndex++;
-          animationRef.current = window.setTimeout(animate, 10); // Adjust speed here
+          if (time - lastTime >= stepDelay) {
+            const step = solveSteps[stepIndex];
+            setGrid(prev => {
+              const newGrid = prev.map(row => [...row]);
+              newGrid[step.row][step.col] = step.value;
+              return newGrid;
+            });
+            setActiveCell({ r: step.row, c: step.col });
+            stepIndex++;
+            lastTime = time;
+          }
+          
+          animationRef.current = requestAnimationFrame(animate);
         };
 
-        animate();
+        animationRef.current = requestAnimationFrame(animate);
       } else {
         setError("This puzzle has no valid solution.");
         setAnimating(false);
@@ -268,10 +295,11 @@ export default function Solver() {
 
   const handleStopAnimation = () => {
     if (animationRef.current) {
-      window.clearTimeout(animationRef.current);
+      cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
     setAnimating(false);
+    animatingRef.current = false;
     setIsProcessing(false);
   };
 
@@ -387,7 +415,9 @@ export default function Solver() {
   };
 
   const handleAiChat = async (customMessage?: string) => {
-    if (isGridCompleteAndValid(grid)) {
+    // Only block if it's the auto-analysis request and grid is complete.
+    // Allow custom questions even on solved grids.
+    if (!customMessage && isGridCompleteAndValid(grid)) {
       setAiResponse("All grids are filled; nothing to recommend. Start a new game and ask me.");
       return;
     }
@@ -400,30 +430,8 @@ export default function Solver() {
     setIsAiThinking(true);
     setAiResponse(null);
     try {
-      const baseUrl = import.meta.env.PROD ? '' : 'http://localhost:3000';
-      const response = await fetch(`${baseUrl}/api/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: messageToSend,
-          grid
-        })
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("AI Chat Error Response:", text);
-        try {
-          const json = JSON.parse(text);
-          setError(json.error || `Server error: ${response.status}`);
-        } catch {
-          setError(`HTTP Error ${response.status}: ${text.slice(0, 100) || "Failed to reach AI service."}`);
-        }
-        setIsAiThinking(false);
-        return;
-      }
-
-      const data = await response.json();
+      const data = await aiChat(messageToSend, grid);
+      
       if (data.error) {
         setError(data.error);
       } else {
@@ -431,9 +439,10 @@ export default function Solver() {
         setAiResponse(botResponse);
         setChatHistory(prev => [...prev, { role: 'bot', text: botResponse }]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("AI Chat Error:", err);
-      setError("Failed to connect to AI service. Please check your internet connection.");
+      const errorMsg = err.response?.data?.error || err.message || "Failed to reach AI service.";
+      setError(errorMsg);
     } finally {
       setIsAiThinking(false);
       setChatInput("");
@@ -459,9 +468,10 @@ export default function Solver() {
 
   const confirmReset = () => {
     setIsProcessing(true);
-    if (animationRef.current) clearTimeout(animationRef.current);
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
     setGrid(initialGrid);
     setAnimating(false);
+    animatingRef.current = false;
     setSolving(false);
     setTimeTaken(null);
     setSteps([]);
