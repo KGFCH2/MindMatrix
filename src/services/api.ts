@@ -24,4 +24,9 @@ export const getHint = async (grid: number[][]) => {
   return response.data;
 };
 
+export const aiChat = async (message: string, grid: number[][]) => {
+  const response = await api.post('/ai/chat', { message, grid });
+  return response.data;
+};
+
 export default api;
